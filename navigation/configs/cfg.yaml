@@ -1,0 +1,35 @@
+fps: 30
+
+task:
+  start_pos: [10.0, 10.0]
+  goal_pos: [70.0, 70.0]
+  goal_threshold: 1.6
+  pos_eps: 1e-3
+  stable_frames: 5
+
+robot:
+  radius: 1.6
+  max_speed: 18.0
+  max_accel: 24.0
+
+world:
+  # Dynamic obstacles. Each entry: [x, y, half_w, half_h] in grid units.
+  # The obstacle spawns at (x, y) and bounces inside the rectangle [x - half_w, y - half_h, x + half_w, y + half_h].
+  # Speed magnitude is uniformly sampled from dynamic_speed_range; direction is random.
+  dynamic_radius: 1.6
+  dynamic_speed_range: [8.0, 12.0]
+  dynamic_bboxes:
+    - [19.0, 30.0, 8.0, 8.0]
+    - [42.0, 38.0, 8.0, 8.0]
+    - [35.0, 66.0, 8.0, 8.0]
+    - [68.0, 58.0, 8.0, 8.0]
+
+  rng_seed: 47
+
+lidar:
+  range: 32.0
+  rays: 60
+
+renderer:
+  cell_size: 7
+  sidebar_width: 230
