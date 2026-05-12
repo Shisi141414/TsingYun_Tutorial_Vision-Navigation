@@ -6,6 +6,7 @@
 ## 代码功能展示
 
 <!-- 可以上传一个清华云盘的公共链接，也可以直接拖拽视频文件到 description 区域 -->
+<!-- 最终录屏需要为 `timed` 模式的测试过程 -->
 
 - Level 1 录屏（`python navigation/main.py --level 1 --record level1.mp4`）：
 - Level 2 录屏（`python navigation/main.py --level 2 --record level2.mp4`）：
