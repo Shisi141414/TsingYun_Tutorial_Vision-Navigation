@@ -14,6 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from utils.geometry import world_to_grid, grid_to_world
 
+_cache = {"start": None, "goal": None, "path": []}
+
 def global_plan(
     start: Tuple[float, float],
     goal: Tuple[float, float],
@@ -50,10 +52,18 @@ def global_plan(
       (diagonal distance) or Euclidean distance.
     """
     # TODO: Implement path search on the costmap grid to find a path from start to goal.
+    
+    # 结果缓存：如果 start 和 goal 没变且之前计算过路径，则直接返回缓存的路径
+    start_key = (round(start[0], 2), round(start[1], 2))
+    goal_key = (round(goal[0], 2), round(goal[1], 2))
+
+    if _cache["start"] == start_key and _cache["goal"] == goal_key and _cache["path"]:
+        return _cache["path"]
+
     rows, cols = costmap.shape
     # 世界坐标 → 网格坐标
     sy, sx = world_to_grid(start[0], start[1])
-    gx, gy = world_to_grid(goal[0], goal[1])
+    gy, gx = world_to_grid(goal[0], goal[1])
 
     # 起点或终点在致命格子上 → 返回空
     if costmap[sy, sx] >= 250 or costmap[gy, gx] >= 250:
@@ -109,7 +119,13 @@ def global_plan(
     path = []
     cur = (gx, gy)
     while cur is not None:
-        path.append(grid_to_world(cur[0] + 0.5, cur[1] + 0.5))
+        path.append(grid_to_world(cur[1], cur[0]))
         cur = came_from[cur]
     path.reverse()
+
+    # 更新缓存
+    _cache["start"] = start_key
+    _cache["goal"] = goal_key
+    _cache["path"] = path
+
     return path
