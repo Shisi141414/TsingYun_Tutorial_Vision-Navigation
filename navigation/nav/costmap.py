@@ -51,7 +51,7 @@ def compute_costmap(
     """
     # TODO: Implement a function to compute a costmap from the static map by inflating obstacles.
     distances = distance_transform_edt(static_map == 0)
-    inflation_radius = 7.0  # tuning parameter: how far the cost should extend from obstacles
+    inflation_radius = 5.0  # tuning parameter: how far the cost should extend from obstacles
     costmap = np.clip(255 * (1 - distances / inflation_radius), 0, 255)
     costmap[static_map == 1] = 255  # lethal cost for obstacle cells
     return costmap.astype(np.uint8)

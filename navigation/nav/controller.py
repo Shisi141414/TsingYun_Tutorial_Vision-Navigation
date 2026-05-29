@@ -7,6 +7,7 @@ from typing import List, Tuple
 import numpy as np
 
 import math
+import time
 
 def local_plan(
     current_pose: Tuple[float, float],
@@ -61,7 +62,10 @@ def local_plan(
         return (0.0, 0.0)
 
     # 可调参数：前瞻半径
-    Ld = 2.0  # 网格单位
+    Ld = 4.0  # 网格单位
+    goal_Ld = 6.0  # 距离终点小于这个值就开始减速
+
+    min_speed = 0.2  # 最小速度阈值，低于这个就停
 
     # 1. 找到离当前位置最近的路径点索引
     px, py = current_pose
@@ -109,14 +113,21 @@ def local_plan(
     gx, gy = global_path[-1]
     dist_to_goal = math.hypot(gx - px, gy - py)
 
-    if dist_to_goal < Ld:
+    if dist_to_goal < goal_Ld:
         # 距离终点小于前瞻半径 → 减速，避免冲过终点
-        speed = max_speed * (dist_to_goal / Ld)
+        speed = max_speed * (dist_to_goal / goal_Ld)
     else:
         speed = max_speed
 
     # 速度太小就停
-    if speed < 0.1:
+    if speed < min_speed:
         return (0.0, 0.0)
+
+    # # 调试输出
+    # if not hasattr(local_plan, "_start_time"):
+    #     local_plan._start_time = time.time()
+    # elapsed = time.time() - local_plan._start_time
+    # print(f"[local_plan] elapsed={elapsed:.2f}s | Ld={Ld:.2f} goal_Ld={goal_Ld:.2f} min_speed={min_speed:.2f} | "
+    #       f"dist_to_goal={dist_to_goal:.2f} speed={speed:.2f}")
 
     return (dir_x * speed, dir_y * speed)
