@@ -6,6 +6,7 @@ from typing import List, Tuple
 
 import numpy as np
 
+import math
 
 def local_plan(
     current_pose: Tuple[float, float],
@@ -55,4 +56,67 @@ def local_plan(
       (such as MPPI) can be tried.
     """
     # TODO: Implement Pure Pursuit controller.
-    return 0.0, 0.0
+    # 路径为空 → 停止
+    if not global_path:
+        return (0.0, 0.0)
+
+    # 可调参数：前瞻半径
+    Ld = 2.0  # 网格单位
+
+    # 1. 找到离当前位置最近的路径点索引
+    px, py = current_pose
+    closest_idx = 0
+    closest_dist = float('inf')
+    for i, (wx, wy) in enumerate(global_path):
+        d = math.hypot(wx - px, wy - py)
+        # d使用欧氏距离计算，找到最近的路径点索引
+        if d < closest_dist:
+            closest_dist = d
+            closest_idx = i
+
+    # 2. 从前瞻点开始向前累计距离，找前瞻点
+    look_ahead = global_path[-1]  # 默认终点
+    accumulated = 0.0
+    prev = global_path[closest_idx] # 从最近点开始累积距离
+    for i in range(closest_idx + 1, len(global_path)):
+        curr = global_path[i]
+        seg_len = math.hypot(curr[0] - prev[0], curr[1] - prev[1])
+        if accumulated + seg_len >= Ld:
+            # 前瞻点在当前段内，线性插值
+            remaining = Ld - accumulated
+            t = remaining / seg_len if seg_len > 0 else 0.0
+            lx = prev[0] + t * (curr[0] - prev[0])
+            ly = prev[1] + t * (curr[1] - prev[1])
+            look_ahead = (lx, ly)
+            break
+        accumulated += seg_len
+        prev = curr
+
+    # 3. 方向 = 前瞻点 - 当前位置
+    dx = look_ahead[0] - px
+    dy = look_ahead[1] - py
+    dist_to_lookahead = math.hypot(dx, dy)
+
+    if dist_to_lookahead < 1e-9:
+        return (0.0, 0.0)
+
+    # 归一化方向
+    dir_x = dx / dist_to_lookahead
+    dir_y = dy / dist_to_lookahead
+
+    # 4. 速度大小：接近终点时减速
+    # 计算当前位置到终点的剩余路径长度
+    gx, gy = global_path[-1]
+    dist_to_goal = math.hypot(gx - px, gy - py)
+
+    if dist_to_goal < Ld:
+        # 距离终点小于前瞻半径 → 减速，避免冲过终点
+        speed = max_speed * (dist_to_goal / Ld)
+    else:
+        speed = max_speed
+
+    # 速度太小就停
+    if speed < 0.1:
+        return (0.0, 0.0)
+
+    return (dir_x * speed, dir_y * speed)

@@ -6,6 +6,13 @@ from typing import Tuple
 
 import numpy as np
 
+from scipy.ndimage import distance_transform_edt
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from utils.geometry import world_to_grid, grid_to_world
 
 def compute_costmap(
     static_map: np.ndarray,
@@ -43,7 +50,11 @@ def compute_costmap(
       longer route, wasting time.
     """
     # TODO: Implement a function to compute a costmap from the static map by inflating obstacles.
-    return static_map.copy()
+    distances = distance_transform_edt(static_map == 0)
+    inflation_radius = 7.0  # tuning parameter: how far the cost should extend from obstacles
+    costmap = np.clip(255 * (1 - distances / inflation_radius), 0, 255)
+    costmap[static_map == 1] = 255  # lethal cost for obstacle cells
+    return costmap.astype(np.uint8)
 
 
 def update_local_costmap(
@@ -93,4 +104,40 @@ def update_local_costmap(
       re-inflating the same area.
     """
     # TODO: Implement a function to update the global costmap with a local dynamic layer based on the lidar scan.
-    return static_map.copy()
+    costmap = compute_costmap(static_map).astype(np.float32)
+    rows, cols = costmap.shape
+    rx, ry = robot_pos
+
+    dynamic_r = 2  # 动态障碍物膨胀半径
+
+    for i in range(lidar_num_rays):
+        d = lidar_scan[i]
+        if d >= lidar_range:
+            continue
+
+        angle = 2.0 * np.pi * i / lidar_num_rays
+        wx = rx + d * np.cos(angle)
+        wy = ry + d * np.sin(angle)
+        gx, gy = world_to_grid(wx, wy)
+
+        if gx < 0 or gx >= cols or gy < 0 or gy >= rows:
+            continue
+        if static_map[gy, gx] == 1:
+            continue
+
+        # 命中点标记致命
+        costmap[gy, gx] = 255.0
+
+        # 周围膨胀
+        for dy in range(-dynamic_r, dynamic_r + 1):
+            for dx in range(-dynamic_r, dynamic_r + 1):
+                nx, ny = gx + dx, gy + dy
+                if nx < 0 or nx >= cols or ny < 0 or ny >= rows:
+                    continue
+                dist = np.sqrt(dx * dx + dy * dy)
+                if dist <= dynamic_r:
+                    cost = 255.0 * (1.0 - dist / dynamic_r)
+                    costmap[ny, nx] = max(costmap[ny, nx], cost)
+
+    return np.clip(costmap, 0, 255).astype(np.uint8)
+
