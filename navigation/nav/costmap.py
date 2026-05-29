@@ -118,7 +118,7 @@ def update_local_costmap(
         angle = 2.0 * np.pi * i / lidar_num_rays
         wx = rx + d * np.cos(angle)
         wy = ry + d * np.sin(angle)
-        gx, gy = world_to_grid(wx, wy)
+        gy, gx = world_to_grid(wx, wy)
 
         if gx < 0 or gx >= cols or gy < 0 or gy >= rows:
             continue
@@ -136,7 +136,7 @@ def update_local_costmap(
                     continue
                 dist = np.sqrt(dx * dx + dy * dy)
                 if dist <= dynamic_r:
-                    cost = 255.0 * (1.0 - dist / dynamic_r)
+                    cost = 255.0 * 1.5 * (1.0 - dist / dynamic_r)
                     costmap[ny, nx] = max(costmap[ny, nx], cost)
 
     return np.clip(costmap, 0, 255).astype(np.uint8)
