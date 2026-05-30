@@ -108,7 +108,7 @@ def update_local_costmap(
     rows, cols = costmap.shape
     rx, ry = robot_pos
 
-    dynamic_r = 2  # 动态障碍物膨胀半径
+    dynamic_r = 3  # 动态障碍物膨胀半径
 
     for i in range(lidar_num_rays):
         d = lidar_scan[i]
@@ -136,7 +136,7 @@ def update_local_costmap(
                     continue
                 dist = np.sqrt(dx * dx + dy * dy)
                 if dist <= dynamic_r:
-                    cost = 255.0 * 1.5 * (1.0 - dist / dynamic_r)
+                    cost = 255.0 * 0.6 * (1.0 - dist / dynamic_r)
                     costmap[ny, nx] = max(costmap[ny, nx], cost)
 
     return np.clip(costmap, 0, 255).astype(np.uint8)
