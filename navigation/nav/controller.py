@@ -62,10 +62,11 @@ def local_plan(
         return (0.0, 0.0)
 
     # 可调参数：前瞻半径
-    Ld = 4.0  # 网格单位
+    Ld = 6.0  # 网格单位
     goal_Ld = 6.0  # 距离终点小于这个值就开始减速
+    decel_slope = 1.0  # 减速曲线斜率，越大越激进
 
-    min_speed = 0.3  # 最小速度阈值，低于这个就停
+    min_speed = 0.1  # 最小速度阈值，低于这个就停
 
     # 1. 找到离当前位置最近的路径点索引
     px, py = current_pose
@@ -115,7 +116,7 @@ def local_plan(
 
     if dist_to_goal < goal_Ld:
         # 距离终点小于前瞻半径 → 减速，避免冲过终点
-        speed = max_speed * (dist_to_goal / goal_Ld)
+        speed = max_speed * (dist_to_goal / goal_Ld) ** decel_slope
         # 速度太小就停
         if speed < min_speed:
             return (0.0, 0.0)
